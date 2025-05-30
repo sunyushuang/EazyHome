@@ -16,6 +16,7 @@ header {
     background-color: #e0e0e0;
     width: 200px;
     padding: 1em;
+    flex-shrink: 0; /* Prevent sidebar from shrinking */
 }
 
 .content {
@@ -27,6 +28,7 @@ header {
 /* Add a wrapper for sidebar and content to sit side-by-side */
 .container {
     display: flex;
+    flex-direction: row; /* Explicitly set row direction */
     flex-grow: 1;
 }
 

@@ -32,8 +32,8 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    // Initial page load (optional, e.g., load Design page by default)
-    // loadPage('Design'); 
+    // Initial page load: Load Budget page by default
+    loadPage('Budget'); 
 
     // --- Budget Page Specific Functions ---
     function attachBudgetEventListeners() {
