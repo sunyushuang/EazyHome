@@ -1,28 +1,80 @@
-<div id="budget-page">
-    <h2>Budget Management</h2>
-    <div>
-        <button id="add-category-btn">Add Category</button>
-        <button id="add-item-btn">Add Item</button>
+<section id="budget-page">
+    <header>
+        <h2>预算管理</h2>
+        <p>管理您的家庭装修预算，跟踪实际支出与预算的差异</p>
+    </header>
+    
+    <nav class="budget-controls">
+        <button id="add-category-btn" type="button" aria-label="添加新分类">
+            <span>➕</span> 添加分类
+        </button>
+        <button id="add-item-btn" type="button" aria-label="添加新项目">
+            <span>📝</span> 添加项目
+        </button>
+    </nav>
+    
+    <div class="table-container">
+        <table id="budget-table" role="table" aria-label="预算管理表格">
+            <thead>
+                <tr role="row">
+                    <th scope="col" role="columnheader">分类</th>
+                    <th scope="col" role="columnheader">项目</th>
+                    <th scope="col" role="columnheader">预算金额</th>
+                    <th scope="col" role="columnheader">实际花费</th>
+                    <th scope="col" role="columnheader">差额</th>
+                    <th scope="col" role="columnheader">操作</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- 示例数据行 -->
+                <tr role="row">
+                    <td data-label="分类">
+                        <input type="text" class="category-input" value="客厅装修" aria-label="分类名称">
+                    </td>
+                    <td data-label="项目">
+                        <input type="text" class="item-input" value="沙发购买" aria-label="项目名称">
+                    </td>
+                    <td data-label="预算金额">
+                        <input type="number" class="budgeted-amount" value="5000" min="0" step="0.01" aria-label="预算金额">
+                    </td>
+                    <td data-label="实际花费">
+                        <input type="number" class="actual-cost" value="4500" min="0" step="0.01" aria-label="实际花费">
+                    </td>
+                    <td data-label="差额" class="difference positive">¥500.00</td>
+                    <td data-label="操作">
+                        <button class="delete-btn" type="button" title="删除此行" aria-label="删除此行">
+                            <span class="delete-icon">×</span>
+                        </button>
+                    </td>
+                </tr>
+                <tr role="row">
+                    <td data-label="分类">
+                        <input type="text" class="category-input" value="厨房装修" aria-label="分类名称">
+                    </td>
+                    <td data-label="项目">
+                        <input type="text" class="item-input" value="橱柜定制" aria-label="项目名称">
+                    </td>
+                    <td data-label="预算金额">
+                        <input type="number" class="budgeted-amount" value="8000" min="0" step="0.01" aria-label="预算金额">
+                    </td>
+                    <td data-label="实际花费">
+                        <input type="number" class="actual-cost" value="8500" min="0" step="0.01" aria-label="实际花费">
+                    </td>
+                    <td data-label="差额" class="difference negative">-¥500.00</td>
+                    <td data-label="操作">
+                        <button class="delete-btn" type="button" title="删除此行" aria-label="删除此行">
+                            <span class="delete-icon">×</span>
+                        </button>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
     </div>
-    <table id="budget-table">
-        <thead>
-            <tr>
-                <th>Category</th>
-                <th>Item</th>
-                <th>Budgeted Amount</th>
-                <th>Actual Cost</th>
-                <th>Difference</th>
-            </tr>
-        </thead>
-        <tbody>
-            <!-- Rows will be added here by JavaScript -->
-            <tr>
-                <td>Example Category</td>
-                <td>Example Item</td>
-                <td><input type="number" value="100" class="budgeted-amount"></td>
-                <td><input type="number" value="90" class="actual-cost"></td>
-                <td class="difference">10</td>
-            </tr>
-        </tbody>
-    </table>
-</div>
+    
+    <footer class="budget-summary">
+        <div class="summary-info">
+            <p><small>💡 提示：绿色表示节省预算，红色表示超出预算</small></p>
+            <p><small>📱 在移动设备上，表格会自动调整为卡片式布局</small></p>
+        </div>
+    </footer>
+</section>
