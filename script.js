@@ -1,111 +1,370 @@
-document.addEventListener('DOMContentLoaded', () => {
-    const mainContent = document.getElementById('main-content');
-    const navLinks = document.querySelectorAll('.sidebar nav ul li a');
+// 家庭装修管理应用 - 主脚本
+class HomeDecorationApp {
+    constructor() {
+        this.mainContent = document.getElementById('main-content');
+        this.navLinks = document.querySelectorAll('.sidebar nav ul li a');
+        this.currentPage = null;
+        this.budgetData = this.loadBudgetData();
+        
+        this.init();
+    }
 
-    // Function to load page content
-    async function loadPage(pageName) {
-        mainContent.innerHTML = ''; // Clear previous content
-        if (pageName === 'Budget') {
-            try {
-                const response = await fetch('budget.html');
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-                const content = await response.text();
-                mainContent.innerHTML = content;
-                attachBudgetEventListeners(); // Attach event listeners for budget page elements
-            } catch (error) {
-                mainContent.innerHTML = `<p>Error loading ${pageName} page: ${error.message}</p>`;
-                console.error('Error fetching budget.html:', error);
+    init() {
+        this.attachNavigationListeners();
+        this.loadPage('Budget'); // 默认加载预算页面
+    }
+
+    // 导航事件监听器
+    attachNavigationListeners() {
+        this.navLinks.forEach(link => {
+            link.addEventListener('click', (event) => {
+                event.preventDefault();
+                const pageName = link.dataset.page;
+                this.loadPage(pageName);
+                this.updateActiveNavigation(link);
+            });
+        });
+    }
+
+    // 更新导航状态
+    updateActiveNavigation(activeLink) {
+        this.navLinks.forEach(link => link.classList.remove('active'));
+        activeLink.classList.add('active');
+    }
+
+    // 加载页面内容
+    async loadPage(pageName) {
+        try {
+            this.showLoadingState();
+            this.currentPage = pageName;
+            
+            if (pageName === 'Budget') {
+                await this.loadBudgetPage();
+            } else {
+                this.loadPlaceholderPage(pageName);
             }
-        } else {
-            mainContent.innerHTML = `<p>${pageName} Content Area</p>`;
+        } catch (error) {
+            this.showErrorState(pageName, error);
         }
     }
 
-    // Add event listeners to navigation links
-    navLinks.forEach(link => {
-        link.addEventListener('click', (event) => {
-            event.preventDefault();
-            const pageName = link.dataset.page;
-            loadPage(pageName);
-        });
-    });
+    // 显示加载状态
+    showLoadingState() {
+        this.mainContent.innerHTML = '<div class="loading">加载中...</div>';
+    }
 
-    // Initial page load: Load Budget page by default
-    loadPage('Budget'); 
+    // 显示错误状态
+    showErrorState(pageName, error) {
+        console.error(`加载 ${pageName} 页面时出错:`, error);
+        this.mainContent.innerHTML = `
+            <div class="error">
+                <h3>加载失败</h3>
+                <p>无法加载 ${pageName} 页面: ${error.message}</p>
+                <button onclick="location.reload()">重新加载</button>
+            </div>
+        `;
+    }
 
-    // --- Budget Page Specific Functions ---
-    function attachBudgetEventListeners() {
+    // 加载预算页面
+    async loadBudgetPage() {
+        try {
+            const response = await fetch('budget.html');
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+            
+            const content = await response.text();
+            this.mainContent.innerHTML = content;
+            
+            // 初始化预算管理器
+            this.budgetManager = new BudgetManager(this.budgetData);
+            this.budgetManager.init();
+        } catch (error) {
+            throw new Error(`获取预算页面失败: ${error.message}`);
+        }
+    }
+
+    // 加载占位符页面
+    loadPlaceholderPage(pageName) {
+        const pageContent = {
+            'Design': '设计管理 - 即将推出',
+            'Project': '项目管理 - 即将推出', 
+            'Materials': '材料管理 - 即将推出',
+            'Furniture': '家具管理 - 即将推出'
+        };
+
+        this.mainContent.innerHTML = `
+            <div class="page-placeholder">
+                <h2>${pageName}</h2>
+                <p>${pageContent[pageName] || '页面内容正在开发中...'}</p>
+            </div>
+        `;
+    }
+
+    // 加载预算数据
+    loadBudgetData() {
+        const saved = localStorage.getItem('budgetData');
+        return saved ? JSON.parse(saved) : [];
+    }
+
+    // 保存预算数据
+    saveBudgetData(data) {
+        localStorage.setItem('budgetData', JSON.stringify(data));
+    }
+}
+
+// 预算管理器类
+class BudgetManager {
+    constructor(initialData = []) {
+        this.data = initialData;
+        this.tableBody = null;
+        this.totalBudgeted = 0;
+        this.totalActual = 0;
+    }
+
+    init() {
+        this.attachEventListeners();
+        this.renderExistingData();
+        this.updateTotals();
+    }
+
+    // 附加事件监听器
+    attachEventListeners() {
         const addCategoryBtn = document.getElementById('add-category-btn');
         const addItemBtn = document.getElementById('add-item-btn');
-        const budgetTableBody = document.querySelector('#budget-table tbody');
+        this.tableBody = document.querySelector('#budget-table tbody');
 
         if (addCategoryBtn) {
-            addCategoryBtn.addEventListener('click', () => {
-                addBudgetRow('Category');
-            });
+            addCategoryBtn.addEventListener('click', () => this.addBudgetRow('Category'));
         }
 
         if (addItemBtn) {
-            addItemBtn.addEventListener('click', () => {
-                addBudgetRow('Item');
-            });
+            addItemBtn.addEventListener('click', () => this.addBudgetRow('Item'));
         }
-        
-        if (budgetTableBody) {
-            budgetTableBody.addEventListener('input', (event) => {
-                if (event.target.classList.contains('budgeted-amount') || event.target.classList.contains('actual-cost')) {
-                    calculateDifference(event.target.closest('tr'));
+
+        if (this.tableBody) {
+            // 使用事件委托处理动态添加的元素
+            this.tableBody.addEventListener('input', (event) => {
+                if (event.target.matches('.budgeted-amount, .actual-cost')) {
+                    this.handleAmountChange(event.target);
+                }
+            });
+
+            this.tableBody.addEventListener('click', (event) => {
+                if (event.target.matches('.delete-btn')) {
+                    this.deleteRow(event.target.closest('tr'));
                 }
             });
         }
-        // Calculate initial differences for pre-populated rows
-        document.querySelectorAll('#budget-table tbody tr').forEach(row => {
-            calculateDifference(row);
-        });
     }
 
-    function addBudgetRow(type) {
-        const budgetTableBody = document.querySelector('#budget-table tbody');
-        if (!budgetTableBody) return;
-
-        const newRow = budgetTableBody.insertRow();
-        const categoryCell = newRow.insertCell();
-        const itemCell = newRow.insertCell();
-        const budgetedCell = newRow.insertCell();
-        const actualCell = newRow.insertCell();
-        const differenceCell = newRow.insertCell();
-        differenceCell.classList.add('difference');
-
-        if (type === 'Category') {
-            categoryCell.innerHTML = `<input type="text" placeholder="New Category Name">`;
-            itemCell.innerHTML = 'N/A'; // Or make it editable if items can be standalone
-        } else { // Item
-            categoryCell.innerHTML = `<input type="text" placeholder="Category Name">`; // Or a dropdown if categories are predefined
-            itemCell.innerHTML = `<input type="text" placeholder="New Item Name">`;
-        }
+    // 处理金额变化
+    handleAmountChange(input) {
+        const value = parseFloat(input.value) || 0;
         
-        budgetedCell.innerHTML = `<input type="number" class="budgeted-amount" placeholder="0">`;
-        actualCell.innerHTML = `<input type="number" class="actual-cost" placeholder="0">`;
-        differenceCell.textContent = '0';
+        // 验证输入
+        if (value < 0) {
+            input.value = 0;
+            this.showNotification('金额不能为负数', 'warning');
+            return;
+        }
 
-        // Attach event listener to new input fields in this row
-        [budgetedCell.firstChild, actualCell.firstChild].forEach(input => {
-            input.addEventListener('input', () => calculateDifference(newRow));
-        });
-         calculateDifference(newRow); // Calculate initial difference (which will be 0)
+        const row = input.closest('tr');
+        this.calculateRowDifference(row);
+        this.updateTotals();
+        this.saveData();
     }
 
-    function calculateDifference(row) {
-        const budgetedAmountInput = row.querySelector('.budgeted-amount');
-        const actualCostInput = row.querySelector('.actual-cost');
+    // 添加预算行
+    addBudgetRow(type) {
+        if (!this.tableBody) return;
+
+        const newRow = this.createBudgetRow(type);
+        this.tableBody.appendChild(newRow);
+        
+        // 聚焦到第一个输入框
+        const firstInput = newRow.querySelector('input[type="text"]');
+        if (firstInput) {
+            firstInput.focus();
+        }
+
+        this.updateTotals();
+    }
+
+    // 创建预算行
+    createBudgetRow(type, data = {}) {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td>
+                <input type="text" 
+                       class="category-input" 
+                       placeholder="输入分类名称"
+                       value="${data.category || ''}"
+                       ${type === 'Category' ? 'required' : ''}>
+            </td>
+            <td>
+                <input type="text" 
+                       class="item-input" 
+                       placeholder="输入项目名称"
+                       value="${data.item || ''}"
+                       ${type === 'Item' ? 'required' : ''}>
+            </td>
+            <td>
+                <input type="number" 
+                       class="budgeted-amount" 
+                       placeholder="0"
+                       min="0"
+                       step="0.01"
+                       value="${data.budgeted || ''}">
+            </td>
+            <td>
+                <input type="number" 
+                       class="actual-cost" 
+                       placeholder="0"
+                       min="0"
+                       step="0.01"
+                       value="${data.actual || ''}">
+            </td>
+            <td class="difference">${this.formatCurrency(0)}</td>
+            <td>
+                <button class="delete-btn" title="删除此行">
+                    <span class="delete-icon">×</span>
+                </button>
+            </td>
+        `;
+
+        // 计算初始差值
+        setTimeout(() => this.calculateRowDifference(row), 0);
+        
+        return row;
+    }
+
+    // 计算行差值
+    calculateRowDifference(row) {
+        const budgetedInput = row.querySelector('.budgeted-amount');
+        const actualInput = row.querySelector('.actual-cost');
         const differenceCell = row.querySelector('.difference');
 
-        if (budgetedAmountInput && actualCostInput && differenceCell) {
-            const budgeted = parseFloat(budgetedAmountInput.value) || 0;
-            const actual = parseFloat(actualCostInput.value) || 0;
-            differenceCell.textContent = (budgeted - actual).toFixed(2);
+        if (budgetedInput && actualInput && differenceCell) {
+            const budgeted = parseFloat(budgetedInput.value) || 0;
+            const actual = parseFloat(actualInput.value) || 0;
+            const difference = budgeted - actual;
+            
+            differenceCell.textContent = this.formatCurrency(difference);
+            differenceCell.className = `difference ${difference >= 0 ? 'positive' : 'negative'}`;
         }
     }
+
+    // 删除行
+    deleteRow(row) {
+        if (confirm('确定要删除这一行吗？')) {
+            row.remove();
+            this.updateTotals();
+            this.saveData();
+            this.showNotification('行已删除', 'success');
+        }
+    }
+
+    // 更新总计
+    updateTotals() {
+        const rows = this.tableBody.querySelectorAll('tr');
+        let totalBudgeted = 0;
+        let totalActual = 0;
+
+        rows.forEach(row => {
+            const budgeted = parseFloat(row.querySelector('.budgeted-amount')?.value) || 0;
+            const actual = parseFloat(row.querySelector('.actual-cost')?.value) || 0;
+            totalBudgeted += budgeted;
+            totalActual += actual;
+        });
+
+        this.totalBudgeted = totalBudgeted;
+        this.totalActual = totalActual;
+
+        this.updateTotalDisplay();
+    }
+
+    // 更新总计显示
+    updateTotalDisplay() {
+        let totalRow = document.querySelector('.total-row');
+        if (!totalRow) {
+            totalRow = document.createElement('tr');
+            totalRow.className = 'total-row';
+            this.tableBody.parentNode.appendChild(totalRow);
+        }
+
+        const totalDifference = this.totalBudgeted - this.totalActual;
+        totalRow.innerHTML = `
+            <td><strong>总计</strong></td>
+            <td></td>
+            <td><strong>${this.formatCurrency(this.totalBudgeted)}</strong></td>
+            <td><strong>${this.formatCurrency(this.totalActual)}</strong></td>
+            <td class="difference ${totalDifference >= 0 ? 'positive' : 'negative'}">
+                <strong>${this.formatCurrency(totalDifference)}</strong>
+            </td>
+            <td></td>
+        `;
+    }
+
+    // 渲染现有数据
+    renderExistingData() {
+        // 清除现有行（除了示例行）
+        const existingRows = this.tableBody.querySelectorAll('tr');
+        existingRows.forEach(row => {
+            if (!row.querySelector('.budgeted-amount')?.value) {
+                // 保留有数据的行，移除空行
+            }
+        });
+
+        // 渲染保存的数据
+        this.data.forEach(item => {
+            const row = this.createBudgetRow('Item', item);
+            this.tableBody.appendChild(row);
+        });
+    }
+
+    // 保存数据
+    saveData() {
+        const rows = this.tableBody.querySelectorAll('tr:not(.total-row)');
+        this.data = Array.from(rows).map(row => ({
+            category: row.querySelector('.category-input')?.value || '',
+            item: row.querySelector('.item-input')?.value || '',
+            budgeted: parseFloat(row.querySelector('.budgeted-amount')?.value) || 0,
+            actual: parseFloat(row.querySelector('.actual-cost')?.value) || 0
+        })).filter(item => item.category || item.item); // 只保存有内容的行
+
+        localStorage.setItem('budgetData', JSON.stringify(this.data));
+    }
+
+    // 格式化货币
+    formatCurrency(amount) {
+        return new Intl.NumberFormat('zh-CN', {
+            style: 'currency',
+            currency: 'CNY',
+            minimumFractionDigits: 2
+        }).format(amount);
+    }
+
+    // 显示通知
+    showNotification(message, type = 'info') {
+        const notification = document.createElement('div');
+        notification.className = `notification ${type}`;
+        notification.textContent = message;
+        
+        document.body.appendChild(notification);
+        
+        setTimeout(() => {
+            notification.classList.add('show');
+        }, 100);
+
+        setTimeout(() => {
+            notification.classList.remove('show');
+            setTimeout(() => notification.remove(), 300);
+        }, 3000);
+    }
+}
+
+// 应用初始化
+document.addEventListener('DOMContentLoaded', () => {
+    new HomeDecorationApp();
 });

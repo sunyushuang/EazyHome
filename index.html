@@ -1,31 +1,85 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Home Decoration Management</title>
+    <meta name="description" content="家庭装修管理系统 - 预算管理、设计规划、项目跟踪">
+    <meta name="keywords" content="家庭装修,预算管理,装修规划,项目管理">
+    <title>家庭装修管理系统</title>
     <link rel="stylesheet" href="style.css">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏠</text></svg>">
 </head>
 <body>
-    <header>
-        <h1>Home Decoration Management</h1>
+    <header role="banner">
+        <h1>🏠 家庭装修管理系统</h1>
+        <p>让您的装修项目井井有条</p>
     </header>
+    
     <div class="container">
-        <aside class="sidebar">
+        <aside class="sidebar" role="navigation" aria-label="主导航">
             <nav>
-                <ul>
-                    <li><a href="#" data-page="Design">Design</a></li>
-                    <li><a href="#" data-page="Budget">Budget</a></li>
-                    <li><a href="#" data-page="Project">Project</a></li>
-                    <li><a href="#" data-page="Materials">Materials</a></li>
-                    <li><a href="#" data-page="Furniture">Furniture</a></li>
+                <ul role="menubar">
+                    <li role="none">
+                        <a href="#" 
+                           data-page="Design" 
+                           role="menuitem" 
+                           aria-label="设计管理">
+                            <span class="nav-icon">🎨</span>
+                            <span class="nav-text">设计</span>
+                        </a>
+                    </li>
+                    <li role="none">
+                        <a href="#" 
+                           data-page="Budget" 
+                           role="menuitem" 
+                           aria-label="预算管理"
+                           class="active">
+                            <span class="nav-icon">💰</span>
+                            <span class="nav-text">预算</span>
+                        </a>
+                    </li>
+                    <li role="none">
+                        <a href="#" 
+                           data-page="Project" 
+                           role="menuitem" 
+                           aria-label="项目管理">
+                            <span class="nav-icon">📋</span>
+                            <span class="nav-text">项目</span>
+                        </a>
+                    </li>
+                    <li role="none">
+                        <a href="#" 
+                           data-page="Materials" 
+                           role="menuitem" 
+                           aria-label="材料管理">
+                            <span class="nav-icon">🧱</span>
+                            <span class="nav-text">材料</span>
+                        </a>
+                    </li>
+                    <li role="none">
+                        <a href="#" 
+                           data-page="Furniture" 
+                           role="menuitem" 
+                           aria-label="家具管理">
+                            <span class="nav-icon">🪑</span>
+                            <span class="nav-text">家具</span>
+                        </a>
+                    </li>
                 </ul>
             </nav>
         </aside>
-        <main class="content" id="main-content">
-            <p>Main Content Area - Click a tab to see content.</p>
+        
+        <main class="content" id="main-content" role="main" aria-live="polite">
+            <div class="welcome-message">
+                <h2>欢迎使用家庭装修管理系统</h2>
+                <p>请从左侧导航选择您要管理的模块。</p>
+                <div class="loading-indicator" aria-hidden="true">
+                    <div class="spinner"></div>
+                </div>
+            </div>
         </main>
     </div>
+    
     <script src="script.js"></script>
 </body>
 </html>
